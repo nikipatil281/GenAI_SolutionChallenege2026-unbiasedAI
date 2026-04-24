@@ -1,24 +1,39 @@
 import React from 'react';
 import { useAudit } from '../context/AuditContext';
-import { ShieldAlert, Database, Scale, Users, FileBarChart, Settings, ListChecks } from 'lucide-react';
+import { ShieldAlert, Database, Scale, Users, FileBarChart, Settings, ListChecks, ArrowLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function Sidebar({ className }: { className?: string }) {
-  const { activeModule, setActiveModule } = useAudit();
+interface SidebarProps {
+  className?: string;
+  onBackToHome?: () => void;
+}
+
+export function Sidebar({ className, onBackToHome }: SidebarProps) {
+  const { activeModule, setActiveModule, datasetStats, llmMessages, loadingModules } = useAudit();
   
   const modules = [
-    { id: 'problem-framing', label: '01 Problem Framing', icon: ShieldAlert },
-    { id: 'dataset-audit', label: '02 Dataset Audit', icon: Database },
-    { id: 'proxy-screening', label: '03 Proxy Screening', icon: ListChecks },
-    { id: 'fairness-metrics', label: '04 Fairness Engine', icon: Scale },
-    { id: 'subgroup-audit', label: '05 Intersectional', icon: Users },
-    { id: 'governance', label: '06 Governance Hub', icon: FileBarChart },
-    { id: 'decision', label: '07 Decision Export', icon: Settings },
+    { id: 'project-setup', label: '01 Project Setup', icon: ShieldAlert },
+    { id: 'proxy-screening', label: '02 Proxy Screening', icon: ListChecks },
+    { id: 'fairness-metrics', label: '03 Fairness Engine', icon: Scale },
+    { id: 'subgroup-audit', label: '04 Intersectional', icon: Users },
+    { id: 'governance', label: '05 Governance Hub', icon: FileBarChart },
+    { id: 'decision', label: '06 Decision Export', icon: Settings },
   ];
+
+  const hasMessage = (type: string) => llmMessages.some(m => m.type === type);
 
   return (
     <aside className={cn("w-56 bg-[#141414] text-[#E4E3E0] flex flex-col", className)}>
-      <div className="p-6 border-b border-white/10">
+      <div className="p-6 border-b border-white/10 relative">
+        {onBackToHome && (
+          <button 
+            onClick={onBackToHome}
+            className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
+            title="Back to Home"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+        )}
         <h1 className="text-xl font-bold tracking-tighter leading-none uppercase">BiasScope</h1>
         <p className="text-[10px] opacity-50 mt-1 uppercase tracking-widest">Sociotechnical Auditor</p>
       </div>
@@ -27,18 +42,36 @@ export function Sidebar({ className }: { className?: string }) {
         <div className="p-4 opacity-30 text-[9px]">Audit Pipeline</div>
         {modules.map(mod => {
           const isActive = activeModule === mod.id;
+          const isLoading = loadingModules[mod.id];
+          
+          let isLocked = false;
+          if (mod.id === 'proxy-screening') isLocked = !hasMessage('project-setup');
+          if (mod.id === 'fairness-metrics' || mod.id === 'subgroup-audit') isLocked = !hasMessage('proxy');
+          if (mod.id === 'governance') isLocked = !hasMessage('subgroup');
+          if (mod.id === 'decision') isLocked = !hasMessage('governance');
+          
+          // If a module is currently loading, it is unlocked so the user can watch it load!
+          if (isLoading) isLocked = false;
+          
           return (
             <button
               key={mod.id}
-              onClick={() => setActiveModule(mod.id)}
+              onClick={() => { if (!isLocked) setActiveModule(mod.id); }}
+              disabled={isLocked}
               className={cn(
-                "block w-full text-left p-4 transition-all duration-100 ease-in border-b border-white/10 hover:bg-[#F27D26] hover:text-[#141414]",
+                "w-full text-left p-4 transition-all duration-100 ease-in border-b border-white/10 flex items-center justify-between group",
                 isActive 
-                  ? "bg-white/5 text-[#F27D26] hover:text-[#141414]" 
-                  : ""
+                  ? "bg-white/5 text-[#F27D26]" 
+                  : "hover:bg-[#F27D26] hover:text-[#141414]",
+                isLocked ? "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-[#E4E3E0]" : ""
               )}
             >
-              {mod.label}
+              <span>{mod.label}</span>
+              {isLoading ? (
+                <div className="w-3 h-3 rounded-full border-2 border-[#F27D26] border-t-transparent animate-spin"></div>
+              ) : isLocked ? (
+                <div className="w-3 h-3 rounded-full border-2 border-current opacity-50 flex items-center justify-center text-[6px]">!</div>
+              ) : null}
             </button>
           )
         })}

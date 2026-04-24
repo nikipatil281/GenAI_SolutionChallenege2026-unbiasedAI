@@ -19,6 +19,8 @@ type AuditContextType = {
   setGovernance: (data: any) => void;
   targetColumn: string;
   setTargetColumn: (col: string) => void;
+  groundTruthColumn: string;
+  setGroundTruthColumn: (col: string) => void;
   protectedColumns: string[];
   setProtectedColumns: (cols: string[]) => void;
   llmMessages: { type: string; title: string; content: string }[];
@@ -26,18 +28,21 @@ type AuditContextType = {
   clearLlmMessages: (type?: string) => void;
   systemDecision: any | null;
   setSystemDecision: (decision: any) => void;
+  loadingModules: Record<string, boolean>;
+  setLoadingModules: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 };
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
 export const AuditProvider = ({ children }: { children: ReactNode }) => {
-  const [activeModule, setActiveModule] = useState('problem-framing');
+  const [activeModule, setActiveModule] = useState('project-setup');
   const [dataset, setDataset] = useState<any[] | null>(null);
   const [datasetStats, setDatasetStats] = useState<any | null>(null);
   const [associations, setAssociations] = useState<any[] | null>(null);
   const [fairnessMetrics, setFairnessMetrics] = useState<any | null>(null);
   const [subgroups, setSubgroups] = useState<any | null>(null);
   const [targetColumn, setTargetColumn] = useState('');
+  const [groundTruthColumn, setGroundTruthColumn] = useState('');
   const [protectedColumns, setProtectedColumns] = useState<string[]>([]);
   const [systemDecision, setSystemDecision] = useState<any | null>(null);
   
@@ -57,6 +62,7 @@ export const AuditProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [llmMessages, setLlmMessages] = useState<{ type: string; title: string; content: string }[]>([]);
+  const [loadingModules, setLoadingModules] = useState<Record<string, boolean>>({});
 
   const addLlmMessage = (msg: { type: string; title: string; content: string }) => {
     setLlmMessages(prev => {
@@ -89,9 +95,11 @@ export const AuditProvider = ({ children }: { children: ReactNode }) => {
       subgroups, setSubgroups,
       governance, setGovernance,
       targetColumn, setTargetColumn,
+      groundTruthColumn, setGroundTruthColumn,
       protectedColumns, setProtectedColumns,
       llmMessages, addLlmMessage, clearLlmMessages,
-      systemDecision, setSystemDecision
+      systemDecision, setSystemDecision,
+      loadingModules, setLoadingModules
     }}>
       {children}
     </AuditContext.Provider>

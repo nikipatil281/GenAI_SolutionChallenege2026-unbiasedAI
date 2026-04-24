@@ -3,36 +3,23 @@ import { useAudit } from '../../context/AuditContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Target, AlertCircle, BrainCircuit, Check, X, HelpCircle } from 'lucide-react';
+import { Target, AlertCircle, BrainCircuit, Check, X, HelpCircle, Info } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
+import { LlmCompanion } from '../ui/llm-companion';
 
 export function ProxyScreening() {
-  const { associations, targetColumn, addLlmMessage } = useAudit();
-  const [llmLoading, setLlmLoading] = useState(false);
+  const { associations, targetColumn, addLlmMessage, loadingModules } = useAudit();
+  const llmLoading = loadingModules['proxy-screening'] || false;
   const [featureStatus, setFeatureStatus] = useState<Record<string, string>>({});
 
   const handleStatusChange = (feature: string, status: string) => {
     setFeatureStatus(prev => ({ ...prev, [feature]: status }));
   };
 
-  const getLlmReview = async () => {
-    if (!associations) return;
-    setLlmLoading(true);
-    try {
-      const res = await axios.post('/api/llm/proxy', { associations: associations.slice(0, 10) }); // Top 10
-      addLlmMessage({
-        type: 'proxy',
-        title: 'Proxy Legitimacy Review',
-        content: res.data.evaluation
-      });
-      toast.success('LLM proxy review generated.');
-    } catch(e: any) {
-      toast.error('LLM review failed', { description: e.response?.data?.error || e.message });
-    }
-    setLlmLoading(false);
-  };
+
 
   if (!associations) {
     return (
@@ -50,12 +37,10 @@ export function ProxyScreening() {
           <h2 className="text-2xl font-bold tracking-tight uppercase">Proxy Screening</h2>
           <p className="text-[10px] uppercase opacity-50 tracking-widest mt-1">Identify features that may be acting as discriminatory stand-ins for protected traits.</p>
         </div>
-        <Button onClick={getLlmReview} disabled={llmLoading} variant="secondary">
-          <BrainCircuit className="w-4 h-4 mr-2" />
-          {llmLoading ? 'Reviewing...' : 'LLM Proxy Review'}
-        </Button>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Association with Target: {targetColumn}</CardTitle>
@@ -65,10 +50,63 @@ export function ProxyScreening() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Feature</TableHead>
-                <TableHead>Association Score</TableHead>
-                <TableHead>Review Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    Feature
+                    <HoverCard>
+                      <HoverCardTrigger><Info className="w-3.5 h-3.5 text-gray-400 hover:text-black cursor-help" /></HoverCardTrigger>
+                      <HoverCardContent>
+                        <p className="font-bold mb-1">What this means:</p>
+                        <p className="text-gray-600">The specific data point (column) from your uploaded dataset being evaluated.</p>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    Association Score
+                    <HoverCard>
+                      <HoverCardTrigger><Info className="w-3.5 h-3.5 text-gray-400 hover:text-black cursor-help" /></HoverCardTrigger>
+                      <HoverCardContent>
+                        <p className="font-bold mb-1">What this means:</p>
+                        <p className="text-gray-600">Shows how closely a seemingly innocent feature matches the target outcome or protected attribute.</p>
+                        <p className="font-bold mt-2 mb-1">Example:</p>
+                        <p className="text-gray-600">If "Zip Code" has a 95% association with "Race", the AI is basically using zip code as a hidden stand-in for race.</p>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    Review Status
+                    <HoverCard>
+                      <HoverCardTrigger><Info className="w-3.5 h-3.5 text-gray-400 hover:text-black cursor-help" /></HoverCardTrigger>
+                      <HoverCardContent>
+                        <p className="font-bold mb-1">What this means:</p>
+                        <p className="text-gray-600">Your human decision on whether this feature should be allowed in the model.</p>
+                        <p className="font-bold mt-2 mb-1">Options:</p>
+                        <p className="text-gray-600"><strong>Accept:</strong> It's a valid job requirement (e.g. "Coding Test").<br/><strong>Contest:</strong> It's a discriminatory proxy (e.g. "Commute Distance").</p>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    Action
+                    <HoverCard>
+                      <HoverCardTrigger><Info className="w-3.5 h-3.5 text-gray-400 hover:text-black cursor-help" /></HoverCardTrigger>
+                      <HoverCardContent className="text-left">
+                        <p className="font-bold mb-1">What this means:</p>
+                        <p className="text-gray-600">Use these buttons to mark the status of the feature.</p>
+                        <ul className="list-disc pl-4 mt-2 text-gray-600 space-y-1">
+                          <li><strong>Green Check:</strong> Accept the feature.</li>
+                          <li><strong>Amber Question:</strong> Flag for human review.</li>
+                          <li><strong>Red X:</strong> Contest the feature as biased.</li>
+                        </ul>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -110,6 +148,17 @@ export function ProxyScreening() {
           </Table>
         </CardContent>
       </Card>
+        </div>
+
+        <div className="sticky top-6 h-[calc(100vh-8rem)]">
+          <LlmCompanion 
+            title="Proxy Legitimacy Review"
+            description="LLM Evaluation of Correlated Features"
+            message={useAudit().llmMessages.find(m => m.type === 'proxy')}
+            loading={llmLoading}
+          />
+        </div>
+      </div>
     </div>
   );
 }

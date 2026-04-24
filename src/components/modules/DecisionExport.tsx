@@ -3,9 +3,10 @@ import { useAudit } from '../../context/AuditContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { BrainCircuit, AlertOctagon, CheckCircle2, AlertTriangle, FileJson } from 'lucide-react';
+import { BrainCircuit, AlertOctagon, CheckCircle2, AlertTriangle, FileJson, Info } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
 
 export function DecisionExport() {
   const { problemFraming, datasetStats, fairnessMetrics, subgroups, governance, systemDecision, setSystemDecision, llmMessages } = useAudit();
@@ -57,14 +58,35 @@ export function DecisionExport() {
           <p className="text-[10px] uppercase opacity-50 tracking-widest mt-1">Aggregate findings into a firm deployment recommendation.</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={handleGenerateDecision} disabled={loading} variant="default">
-             <BrainCircuit className="w-4 h-4 mr-2" />
-             {loading ? 'Synthesizing...' : 'Synthesize Decision'}
-          </Button>
-          <Button onClick={handleExport} variant="outline" disabled={!systemDecision}>
-             <FileJson className="w-4 h-4 mr-2" />
-             Export JSON
-          </Button>
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <div className="inline-block">
+                <Button onClick={handleGenerateDecision} disabled={loading} variant="default">
+                   <BrainCircuit className="w-4 h-4 mr-2" />
+                   {loading ? 'Synthesizing...' : 'Synthesize Decision'}
+                </Button>
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent align="end" className="w-72">
+              <p className="font-bold mb-1">What this does:</p>
+              <p className="text-gray-600">Takes all your data, metrics, and LLM memos from the previous steps and makes a final, aggregated GO/NO-GO recommendation for deploying this AI system.</p>
+            </HoverCardContent>
+          </HoverCard>
+
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <div className="inline-block">
+                <Button onClick={handleExport} variant="outline" disabled={!systemDecision}>
+                   <FileJson className="w-4 h-4 mr-2" />
+                   Export JSON
+                </Button>
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent align="end" className="w-64">
+              <p className="font-bold mb-1">What this does:</p>
+              <p className="text-gray-600">Downloads a complete, machine-readable audit trail of everything you found. Perfect for compliance teams or legal review.</p>
+            </HoverCardContent>
+          </HoverCard>
         </div>
       </div>
 

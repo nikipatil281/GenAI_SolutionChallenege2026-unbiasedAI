@@ -4,9 +4,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Button } from '../ui/button';
-import { BrainCircuit } from 'lucide-react';
+import { BrainCircuit, Info } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
+import { LlmCompanion } from '../ui/llm-companion';
 
 export function Governance() {
   const { governance, setGovernance, addLlmMessage } = useAudit();
@@ -35,6 +37,8 @@ export function Governance() {
         <p className="text-[10px] uppercase opacity-50 tracking-widest mt-1">Challenge the naive assumption that humans fix bias.</p>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Human Oversight Preparedness</CardTitle>
@@ -42,9 +46,20 @@ export function Governance() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Who reviews model outputs?</Label>
+            <div className="flex items-center gap-2">
+              <Label>Who reviews model outputs?</Label>
+              <HoverCard>
+                <HoverCardTrigger><Info className="w-4 h-4 text-gray-500 hover:text-black cursor-help" /></HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="font-bold mb-1">What this means:</p>
+                  <p className="text-gray-600">The person responsible for catching AI mistakes. "Automation Bias" means humans tend to blindly trust machines.</p>
+                  <p className="font-bold mt-2 mb-1">Why it matters:</p>
+                  <p className="text-gray-600">A frontline worker under pressure will just click "Agree". An expert has the authority to disagree.</p>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
             <Select onValueChange={(v) => setGovernance({...governance, reviewerId: v})} value={governance.reviewerId}>
-              <SelectTrigger><SelectValue placeholder="Select reviewer" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select reviewer" /></SelectTrigger>
               <SelectContent>
                  <SelectItem value="expert">Dedicated Domain Expert</SelectItem>
                  <SelectItem value="worker">Frontline Worker (time constrained)</SelectItem>
@@ -54,9 +69,20 @@ export function Governance() {
           </div>
 
           <div className="space-y-2">
-            <Label>Can human reviewers override the system?</Label>
+            <div className="flex items-center gap-2">
+              <Label>Can human reviewers override the system?</Label>
+              <HoverCard>
+                <HoverCardTrigger><Info className="w-4 h-4 text-gray-500 hover:text-black cursor-help" /></HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="font-bold mb-1">What this means:</p>
+                  <p className="text-gray-600">How much friction is there for a human to say "The AI is wrong"?</p>
+                  <p className="font-bold mt-2 mb-1">Why it matters:</p>
+                  <p className="text-gray-600">If overriding the AI requires filling out a 3-page form, reviewers will just agree with the AI to save time.</p>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
             <Select onValueChange={(v) => setGovernance({...governance, canOverride: v})} value={governance.canOverride}>
-              <SelectTrigger><SelectValue placeholder="Select override policy" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select override policy" /></SelectTrigger>
               <SelectContent>
                  <SelectItem value="easily">Yes, easily with no penalty</SelectItem>
                  <SelectItem value="justification">Yes, but requires heavy written justification</SelectItem>
@@ -66,9 +92,20 @@ export function Governance() {
           </div>
 
            <div className="space-y-2">
-            <Label>What evidence is shown to the reviewer?</Label>
+            <div className="flex items-center gap-2">
+              <Label>What evidence is shown to the reviewer?</Label>
+              <HoverCard>
+                <HoverCardTrigger><Info className="w-4 h-4 text-gray-500 hover:text-black cursor-help" /></HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="font-bold mb-1">What this means:</p>
+                  <p className="text-gray-600">Does the human see the full context, or just the AI's final answer?</p>
+                  <p className="font-bold mt-2 mb-1">Why it matters:</p>
+                  <p className="text-gray-600">You cannot meaningfully oversee a decision if you don't know *why* the AI made it.</p>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
             <Select onValueChange={(v) => setGovernance({...governance, evidenceShown: v})} value={governance.evidenceShown}>
-              <SelectTrigger><SelectValue placeholder="Select evidence level" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select evidence level" /></SelectTrigger>
               <SelectContent>
                  <SelectItem value="full">Full contextual file + model score</SelectItem>
                  <SelectItem value="score_only">Only the model score and top 3 factors</SelectItem>
@@ -78,9 +115,20 @@ export function Governance() {
           </div>
 
            <div className="space-y-2">
-            <Label>Expected speed of decision per case</Label>
+            <div className="flex items-center gap-2">
+              <Label>Expected speed of decision per case</Label>
+              <HoverCard>
+                <HoverCardTrigger><Info className="w-4 h-4 text-gray-500 hover:text-black cursor-help" /></HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="font-bold mb-1">What this means:</p>
+                  <p className="text-gray-600">How much time does the human have to review each AI output?</p>
+                  <p className="font-bold mt-2 mb-1">Why it matters:</p>
+                  <p className="text-gray-600">If a human is expected to review one case every 5 seconds, it is "fake oversight". They are just a rubber stamp.</p>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
             <Select onValueChange={(v) => setGovernance({...governance, speedOfDecision: v})} value={governance.speedOfDecision}>
-              <SelectTrigger><SelectValue placeholder="Select speed" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select speed" /></SelectTrigger>
               <SelectContent>
                  <SelectItem value="seconds">Seconds (High risk of automation bias)</SelectItem>
                  <SelectItem value="minutes">Minutes</SelectItem>
@@ -89,17 +137,23 @@ export function Governance() {
             </Select>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-3 bg-white py-4 px-6 border-t border-[#141414] mt-4">
-          <Button disabled={loading} onClick={handleSubmit}>
-            {loading ? 'Evaluating...' : (
-              <>
-                <BrainCircuit className="w-4 h-4 mr-2" />
-                Generate Oversight Failure Memo
-              </>
-            )}
-          </Button>
-        </CardFooter>
       </Card>
+        </div>
+
+        <div className="sticky top-6 h-[calc(100vh-8rem)]">
+          <LlmCompanion 
+            title="Governance & Human Oversight Risk"
+            description="LLM Evaluation of Automation Bias"
+            message={useAudit().llmMessages.find(m => m.type === 'governance')}
+            loading={loading}
+            action={{
+              label: "Generate Oversight Failure Memo",
+              onClick: handleSubmit,
+              disabled: !governance.reviewerId || !governance.canOverride || !governance.evidenceShown || !governance.speedOfDecision
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

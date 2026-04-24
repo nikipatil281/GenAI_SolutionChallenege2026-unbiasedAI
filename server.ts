@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -9,7 +10,9 @@ import {
   evaluateProxies, 
   generateFairnessSummary,
   summarizeGovernance,
-  generateDeploymentDecision
+  generateDeploymentDecision,
+  evaluateProjectSetup,
+  detectProtectedAttributes
 } from "./src/server/llm.ts";
 
 async function startServer() {
@@ -25,17 +28,20 @@ async function startServer() {
 
   app.post("/api/audit/analyze", async (req, res) => {
     try {
-      const { data, targetColumn, protectedColumns, scoreColumn } = req.body;
+      const { data, targetColumn, protectedColumns, groundTruthColumn } = req.body;
       
       const datasetStats = analyzeDataset(data);
       const associations = targetColumn ? analyzeAssociations(data, targetColumn) : null;
-      let fairness = null;
+      let fairness: any = null;
       let subgroups = null;
 
       if (targetColumn && protectedColumns && protectedColumns.length > 0) {
-        // Evaluate fairness metrics if we have the needed columns
-        fairness = calculateFairnessMetrics(data, targetColumn, protectedColumns[0], scoreColumn);
-        subgroups = createSubgroupSlices(data, protectedColumns, targetColumn, scoreColumn);
+        // Evaluate fairness metrics for each protected column
+        fairness = {};
+        protectedColumns.forEach((col: string) => {
+          fairness[col] = calculateFairnessMetrics(data, targetColumn, col, groundTruthColumn === 'none' ? undefined : groundTruthColumn);
+        });
+        subgroups = createSubgroupSlices(data, protectedColumns, targetColumn, groundTruthColumn === 'none' ? undefined : groundTruthColumn);
       }
 
       res.json({ datasetStats, associations, fairness, subgroups });
@@ -58,6 +64,22 @@ async function startServer() {
       const { stats } = req.body;
       const narrative = await generateDatasetNarrative(stats);
       res.json({ narrative });
+    } catch (e: any) { res.status(500).json({error: e.message}); }
+  });
+
+  app.post("/api/llm/project-setup", async (req, res) => {
+    try {
+      const { questionnaire, stats } = req.body;
+      const memo = await evaluateProjectSetup(questionnaire, stats);
+      res.json({ memo });
+    } catch (e: any) { res.status(500).json({error: e.message}); }
+  });
+
+  app.post("/api/llm/detect-protected", async (req, res) => {
+    try {
+      const { columns, sampleData } = req.body;
+      const protectedCols = await detectProtectedAttributes(columns, sampleData);
+      res.json({ protectedCols });
     } catch (e: any) { res.status(500).json({error: e.message}); }
   });
 

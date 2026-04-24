@@ -1,7 +1,6 @@
 import React from 'react';
 import { useAudit } from '../context/AuditContext';
-import { ProblemFraming } from './modules/ProblemFraming';
-import { DatasetAudit } from './modules/DatasetAudit';
+import { ProjectSetup } from './modules/ProjectSetup';
 import { ProxyScreening } from './modules/ProxyScreening';
 import { FairnessMetrics } from './modules/FairnessMetrics';
 import { SubgroupAudit } from './modules/SubgroupAudit';
@@ -27,9 +26,8 @@ export function MainWorkspace({ className }: { className?: string }) {
         </div>
       </header>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-8 max-w-4xl mx-auto">
-          {activeModule === 'problem-framing' && <ProblemFraming />}
-          {activeModule === 'dataset-audit' && <DatasetAudit />}
+        <div className="p-8">
+          {activeModule === 'project-setup' && <ProjectSetup />}
           {activeModule === 'proxy-screening' && <ProxyScreening />}
           {activeModule === 'fairness-metrics' && <FairnessMetrics />}
           {activeModule === 'subgroup-audit' && <SubgroupAudit />}
