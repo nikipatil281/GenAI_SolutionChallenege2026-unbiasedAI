@@ -14,6 +14,8 @@ import {
   evaluateProjectSetup,
   detectProtectedAttributes
 } from "./src/server/llm.ts";
+import { Runner, getSessionServiceFromUri } from "@google/adk";
+import { coordinatorAgent } from "./src/agents/coordinator.ts";
 
 async function startServer() {
   const app = express();
@@ -113,6 +115,38 @@ async function startServer() {
       const decision = await generateDeploymentDecision(context);
       res.json(decision);
     } catch (e: any) { res.status(500).json({error: e.message}); }
+  });
+
+  // Agentic AI Route
+  app.post("/api/agent/chat", async (req, res) => {
+    try {
+      const { message, context, userId } = req.body;
+      
+      const sessionService = await getSessionServiceFromUri('sqlite://:memory:');
+      const runner = new Runner({
+        appName: 'UnbiasedAI',
+        agent: coordinatorAgent,
+        sessionService
+      });
+
+      const events = runner.runEphemeral({
+        userId: userId || 'default-user',
+        newMessage: { role: 'user', parts: [{ text: message }] },
+        stateDelta: context
+      });
+
+      let responseText = '';
+      for await (const event of events) {
+         if ((event as any).type === 'message' && (event as any).content) {
+            responseText += JSON.stringify((event as any).content) + '\n';
+         }
+      }
+
+      res.json({ response: responseText });
+    } catch (e: any) {
+      console.error("[Agent Error]", e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
 

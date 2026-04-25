@@ -16,6 +16,7 @@
     "@base-ui/react": "^1.4.1",
     "@fontsource-variable/geist": "^5.2.8",
     "@google-cloud/vertexai": "^1.12.0",
+    "@google/adk": "^1.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.14",
     "@types/papaparse": "^5.5.2",
