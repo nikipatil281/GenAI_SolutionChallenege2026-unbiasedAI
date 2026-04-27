@@ -6,10 +6,12 @@ import { FairnessMetrics } from './modules/FairnessMetrics';
 import { SubgroupAudit } from './modules/SubgroupAudit';
 import { Governance } from './modules/Governance';
 import { DecisionExport } from './modules/DecisionExport';
+import { DataChat } from './modules/DataChat';
 import { cn } from '../lib/utils';
 
 export function MainWorkspace({ className }: { className?: string }) {
   const { activeModule } = useAudit();
+  const isChatView = activeModule === 'ai-chat';
   
   return (
     <main className={cn("flex-grow flex flex-col overflow-hidden bg-[#E4E3E0]", className)}>
@@ -26,13 +28,14 @@ export function MainWorkspace({ className }: { className?: string }) {
         </div>
       </header>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className={cn(isChatView ? "h-full" : "p-8")}>
           {activeModule === 'project-setup' && <ProjectSetup />}
           {activeModule === 'proxy-screening' && <ProxyScreening />}
           {activeModule === 'fairness-metrics' && <FairnessMetrics />}
           {activeModule === 'subgroup-audit' && <SubgroupAudit />}
           {activeModule === 'governance' && <Governance />}
           {activeModule === 'decision' && <DecisionExport />}
+          {activeModule === 'ai-chat' && <DataChat />}
         </div>
       </div>
     </main>

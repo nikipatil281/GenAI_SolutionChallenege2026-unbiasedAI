@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export type AuditChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 type AuditContextType = {
   activeModule: string;
   setActiveModule: (id: string) => void;
@@ -30,6 +36,10 @@ type AuditContextType = {
   setSystemDecision: (decision: any) => void;
   loadingModules: Record<string, boolean>;
   setLoadingModules: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  chatMessages: AuditChatMessage[];
+  setChatMessages: React.Dispatch<React.SetStateAction<AuditChatMessage[]>>;
+  addChatMessage: (message: AuditChatMessage) => void;
+  clearChatMessages: () => void;
 };
 
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
@@ -63,6 +73,7 @@ export const AuditProvider = ({ children }: { children: ReactNode }) => {
 
   const [llmMessages, setLlmMessages] = useState<{ type: string; title: string; content: string }[]>([]);
   const [loadingModules, setLoadingModules] = useState<Record<string, boolean>>({});
+  const [chatMessages, setChatMessages] = useState<AuditChatMessage[]>([]);
 
   const addLlmMessage = (msg: { type: string; title: string; content: string }) => {
     setLlmMessages(prev => {
@@ -84,6 +95,14 @@ export const AuditProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addChatMessage = (message: AuditChatMessage) => {
+    setChatMessages(prev => [...prev, message]);
+  };
+
+  const clearChatMessages = () => {
+    setChatMessages([]);
+  };
+
   return (
     <AuditContext.Provider value={{
       activeModule, setActiveModule,
@@ -99,7 +118,8 @@ export const AuditProvider = ({ children }: { children: ReactNode }) => {
       protectedColumns, setProtectedColumns,
       llmMessages, addLlmMessage, clearLlmMessages,
       systemDecision, setSystemDecision,
-      loadingModules, setLoadingModules
+      loadingModules, setLoadingModules,
+      chatMessages, setChatMessages, addChatMessage, clearChatMessages
     }}>
       {children}
     </AuditContext.Provider>

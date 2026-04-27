@@ -59,7 +59,7 @@ export function DecisionExport() {
         </div>
         <div className="flex gap-3">
           <HoverCard>
-            <HoverCardTrigger asChild>
+            <HoverCardTrigger>
               <div className="inline-block">
                 <Button onClick={handleGenerateDecision} disabled={loading} variant="default">
                    <BrainCircuit className="w-4 h-4 mr-2" />
@@ -74,7 +74,7 @@ export function DecisionExport() {
           </HoverCard>
 
           <HoverCard>
-            <HoverCardTrigger asChild>
+            <HoverCardTrigger>
               <div className="inline-block">
                 <Button onClick={handleExport} variant="outline" disabled={!systemDecision}>
                    <FileJson className="w-4 h-4 mr-2" />

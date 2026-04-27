@@ -220,3 +220,138 @@ DO NOT wrap in \`\`\`json or add any other text. Output raw JSON only.`;
     return [];
   }
 }
+
+function truncateText(value: string, maxChars = 1800) {
+  if (!value) return value;
+  return value.length > maxChars ? `${value.slice(0, maxChars)}...` : value;
+}
+
+function buildDatasetPreview(dataset: any[]) {
+  if (!Array.isArray(dataset) || dataset.length === 0) {
+    return { totalRows: 0, sampleRows: [] };
+  }
+
+  const columns = Object.keys(dataset[0] || {});
+  const includeFullDataset = dataset.length <= 20 && columns.length <= 12;
+
+  return {
+    totalRows: dataset.length,
+    columns,
+    mode: includeFullDataset ? 'full-dataset' : 'sampled-preview',
+    sampleRows: includeFullDataset ? dataset : dataset.slice(0, 15),
+    tailRows: includeFullDataset ? [] : dataset.slice(-5),
+  };
+}
+
+function buildStatsPreview(datasetStats: any) {
+  if (!datasetStats?.stats) return datasetStats;
+
+  const columns = datasetStats.columns || Object.keys(datasetStats.stats);
+  const limitedColumns = columns.slice(0, 30);
+  const stats: any = {};
+
+  limitedColumns.forEach((column: string) => {
+    stats[column] = datasetStats.stats[column];
+  });
+
+  return {
+    totalRows: datasetStats.totalRows,
+    columns: limitedColumns,
+    stats,
+    omittedColumnCount: Math.max(0, columns.length - limitedColumns.length),
+  };
+}
+
+function buildAssociationPreview(associations: any[]) {
+  if (!Array.isArray(associations)) return [];
+  return associations.slice(0, 12);
+}
+
+function buildFairnessPreview(fairnessMetrics: any) {
+  if (!fairnessMetrics || typeof fairnessMetrics !== 'object') return fairnessMetrics;
+
+  const summary: any = {};
+
+  Object.entries(fairnessMetrics).forEach(([column, metrics]: [string, any]) => {
+    const groupMetrics = metrics?.groupMetrics || {};
+    const sortedGroups = Object.entries(groupMetrics)
+      .sort((a: any, b: any) => (a[1]?.positiveRate ?? 0) - (b[1]?.positiveRate ?? 0));
+
+    summary[column] = {
+      demographicParityDifference: metrics.demographicParityDifference,
+      demographicParityRatio: metrics.demographicParityRatio,
+      equalOpportunityDifference: metrics.equalOpportunityDifference,
+      averageOddsDifference: metrics.averageOddsDifference,
+      errorRateDifference: metrics.errorRateDifference,
+      worstGroups: sortedGroups.slice(0, 5).map(([group, values]: [string, any]) => ({ group, ...values })),
+      bestGroups: sortedGroups.slice(-3).reverse().map(([group, values]: [string, any]) => ({ group, ...values })),
+    };
+  });
+
+  return summary;
+}
+
+function buildSubgroupPreview(subgroups: any) {
+  if (!subgroups || typeof subgroups !== 'object') return subgroups;
+
+  return Object.entries(subgroups)
+    .map(([group, values]: [string, any]) => ({ group, ...values }))
+    .sort((a: any, b: any) => (a.positiveRate ?? 0) - (b.positiveRate ?? 0))
+    .slice(0, 12);
+}
+
+function buildMemoPreview(llmMessages: any[]) {
+  if (!Array.isArray(llmMessages)) return [];
+  return llmMessages.map((message) => ({
+    type: message.type,
+    title: message.title,
+    content: truncateText(message.content, 2200),
+  }));
+}
+
+function buildAuditChatContext(context: any) {
+  return {
+    problemFraming: context.problemFraming,
+    targetColumn: context.targetColumn,
+    groundTruthColumn: context.groundTruthColumn,
+    protectedColumns: context.protectedColumns,
+    datasetPreview: buildDatasetPreview(context.dataset),
+    datasetStats: buildStatsPreview(context.datasetStats),
+    topAssociations: buildAssociationPreview(context.associations),
+    fairnessMetrics: buildFairnessPreview(context.fairnessMetrics),
+    worstSubgroups: buildSubgroupPreview(context.subgroups),
+    governance: context.governance,
+    previousMemos: buildMemoPreview(context.llmMessages),
+    finalDecision: context.systemDecision,
+  };
+}
+
+export async function answerAuditQuestion(message: string, context: any, history: any[] = []) {
+  const model = getAI();
+  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
+
+  const prompt = `You are BiasScope's AI audit copilot.
+You answer questions about the user's uploaded dataset and the audit results that BiasScope already computed.
+
+Rules:
+1. Use only the provided audit context. Do not invent columns, groups, metrics, or findings.
+2. If the answer depends on information that is not present, say that clearly.
+3. Ground your answer in concrete fields, subgroup names, or metrics whenever possible.
+4. The dataset may be represented as a preview if it is too large to include in full. If that limits certainty, say so.
+5. Keep the tone practical, direct, and easy to understand.
+
+Audit context:
+${JSON.stringify(buildAuditChatContext(context), null, 2)}
+
+Recent conversation:
+${JSON.stringify(history.slice(-8), null, 2)}
+
+User question:
+${message}
+
+Answer in markdown. Prefer short paragraphs and bullets when they improve clarity.`;
+
+  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
+  const result = await model.generateContent(request);
+  return result.response.candidates[0].content.parts[0].text;
+}

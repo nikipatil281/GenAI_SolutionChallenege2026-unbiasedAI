@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAudit } from '../context/AuditContext';
-import { ShieldAlert, Database, Scale, Users, FileBarChart, Settings, ListChecks, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, Scale, Users, FileBarChart, Settings, ListChecks, ArrowLeft, MessageSquareMore, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {
@@ -9,7 +9,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className, onBackToHome }: SidebarProps) {
-  const { activeModule, setActiveModule, datasetStats, llmMessages, loadingModules } = useAudit();
+  const { activeModule, setActiveModule, llmMessages, loadingModules } = useAudit();
   
   const modules = [
     { id: 'project-setup', label: '01 Project Setup', icon: ShieldAlert },
@@ -17,10 +17,12 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
     { id: 'fairness-metrics', label: '03 Fairness Engine', icon: Scale },
     { id: 'subgroup-audit', label: '04 Intersectional', icon: Users },
     { id: 'governance', label: '05 Governance Hub', icon: FileBarChart },
-    { id: 'decision', label: '06 Decision Export', icon: Settings },
+    { id: 'decision', label: '06 Decision Expert', icon: Settings },
   ];
 
   const hasMessage = (type: string) => llmMessages.some(m => m.type === type);
+  const chatReady = hasMessage('governance');
+  const chatActive = activeModule === 'ai-chat';
 
   return (
     <aside className={cn("w-56 bg-[#141414] text-[#E4E3E0] flex flex-col", className)}>
@@ -75,6 +77,47 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
             </button>
           )
         })}
+
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={() => {
+              if (chatReady) setActiveModule('ai-chat');
+            }}
+            disabled={!chatReady}
+            className={cn(
+              "w-full rounded-xl border p-4 text-left transition-all duration-200",
+              chatReady
+                ? "border-[#F27D26]/60 bg-[#F27D26]/12 text-white shadow-[0_0_28px_rgba(242,125,38,0.18)] hover:bg-[#F27D26] hover:text-[#141414]"
+                : "border-white/10 bg-white/[0.03] text-white/35 cursor-not-allowed",
+              chatActive && "bg-[#F27D26] text-[#141414] shadow-[0_0_34px_rgba(242,125,38,0.3)]"
+            )}
+          >
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  "mt-0.5 rounded-lg border p-2",
+                  chatReady ? "border-current/40 bg-black/10" : "border-white/10"
+                )}>
+                  <MessageSquareMore className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] leading-tight">
+                      Talk To An AI Bot
+                    </span>
+                    {chatReady && <Sparkles className="w-3 h-3 shrink-0" />}
+                  </div>
+                </div>
+              </div>
+              <p className={cn(
+                "text-[10px] normal-case leading-relaxed",
+                chatReady ? "text-current/80" : "text-white/30"
+              )}>
+                Ask questions about your dataset, fairness signals, subgroup harms, and governance results.
+              </p>
+            </div>
+          </button>
+        </div>
       </nav>
       
       <div className="p-4 bg-white/5 text-[10px]">

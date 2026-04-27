@@ -23,7 +23,8 @@ export function ProjectSetup() {
     problemFraming, setProblemFraming, addLlmMessage, clearLlmMessages,
     dataset, setDataset, datasetStats, setDatasetStats, setAssociations, setFairnessMetrics, setSubgroups, 
     targetColumn, setTargetColumn, groundTruthColumn, setGroundTruthColumn, 
-    protectedColumns, setProtectedColumns, loadingModules, setLoadingModules
+    protectedColumns, setProtectedColumns, loadingModules, setLoadingModules,
+    clearChatMessages, setSystemDecision
   } = useAudit();
   
   // Local loading states
@@ -39,6 +40,17 @@ export function ProjectSetup() {
 
     const processData = async (data: any[]) => {
       setDataset(data);
+      setDatasetStats(null);
+      setAssociations(null);
+      setFairnessMetrics(null);
+      setSubgroups(null);
+      setTargetColumn('');
+      setGroundTruthColumn('');
+      setProtectedColumns([]);
+      setSystemDecision(null);
+      clearLlmMessages();
+      clearChatMessages();
+      setLoadingModules({});
       toast.success(`Successfully parsed ${data.length} rows. Analyzing schema...`);
       
       // Auto-detect protected attributes
@@ -124,6 +136,8 @@ export function ProjectSetup() {
 
       // Clear previous memos
       clearLlmMessages();
+      clearChatMessages();
+      setSystemDecision(null);
 
       // ==========================================
       // WATERFALL LLM PIPELINE
