@@ -192,7 +192,7 @@ http://localhost:3000
 - `npm run build`  
   Builds the frontend and bundles the server
 - `npm run start`  
-  Starts the production server from `dist/server.js`
+  Starts the production server from `dist/server.cjs`
 - `npm run lint`  
   Runs `tsc --noEmit`
 - `npm run clean`  
