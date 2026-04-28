@@ -72,30 +72,6 @@ async function runTextPrompt(prompt: string) {
   return sanitizeTextResponse(text);
 }
 
-export async function evaluateLegitimacy(questionnaire: any) {
-  const prompt = `You are a sociotechnical bias auditor evaluating a proposed AI system.
-Task: Write a Legitimacy Analysis. 
-Questionnaire Answers: ${JSON.stringify(questionnaire, null, 2)}
-Is the target variable morally defensible? Will it encode historical deprivation? 
-Could this decision be too socially contested to automate responsibly?
-
-${AUDIT_RESPONSE_STYLE}
-The user reading this might not be an AI ethics expert, so explain the risks simply, directly, and without overwhelming them with text.`;
-
-  return runTextPrompt(prompt);
-}
-
-export async function generateDatasetNarrative(stats: any) {
-  const prompt = `You are an AI auditor. Review these dataset statistics:
-${JSON.stringify(stats, null, 2)}
-Explain what these issues may mean socially. What hidden concerns like selective visibility, historical exclusion, or institutional over-surveillance might be present? Produce a narrative: "What this data may actually be measuring".
-
-${AUDIT_RESPONSE_STYLE}
-Explain the issues simply and directly.`;
-
-  return runTextPrompt(prompt);
-}
-
 export async function evaluateProxies(associations: any) {
   const prompt = `Review these feature associations with the target variable:
 ${JSON.stringify(associations, null, 2)}

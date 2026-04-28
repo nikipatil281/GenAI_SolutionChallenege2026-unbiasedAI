@@ -5,8 +5,6 @@ import path from "path";
 
 import { analyzeDataset, analyzeAssociations, calculateFairnessMetrics, createSubgroupSlices } from "./src/server/stats.ts";
 import { 
-  evaluateLegitimacy, 
-  generateDatasetNarrative, 
   evaluateProxies, 
   generateFairnessSummary,
   summarizeGovernance,
@@ -50,22 +48,6 @@ async function startServer() {
       console.error(error);
       res.status(500).json({ error: error.message });
     }
-  });
-
-  app.post("/api/llm/legitimacy", async (req, res) => {
-    try {
-      const { questionnaire } = req.body;
-      const memo = await evaluateLegitimacy(questionnaire);
-      res.json({ memo });
-    } catch (e: any) { res.status(500).json({error: e.message}); }
-  });
-
-  app.post("/api/llm/dataset", async (req, res) => {
-    try {
-      const { stats } = req.body;
-      const narrative = await generateDatasetNarrative(stats);
-      res.json({ narrative });
-    } catch (e: any) { res.status(500).json({error: e.message}); }
   });
 
   app.post("/api/llm/project-setup", async (req, res) => {

@@ -125,9 +125,6 @@ At runtime, the flow is:
   Vertex AI prompts and audit copilot logic
 - [server.ts](./server.ts)  
   Express server and API routes
-- [sample_audit_data.csv](./sample_audit_data.csv)  
-  Simple local sample dataset for testing the flow
-
 ## API Routes
 
 - `GET /api/health`  
@@ -193,7 +190,7 @@ http://localhost:3000
 - `npm run build`  
   Builds the frontend and bundles the server
 - `npm run start`  
-  Starts the production server from `dist/server.cjs`
+  Starts the production server from `dist/server.js`
 - `npm run lint`  
   Runs `tsc --noEmit`
 - `npm run clean`  
@@ -227,7 +224,7 @@ If you want a quick walkthrough:
 
 1. Start the app locally.
 2. Choose `Audit Tabular Dataset`.
-3. Upload [sample_audit_data.csv](./sample_audit_data.csv).
+3. Upload your own CSV or Excel dataset.
 4. Select a target column and one or more protected attributes.
 5. Run the sociotechnical waterfall.
 6. Open the chat copilot.
