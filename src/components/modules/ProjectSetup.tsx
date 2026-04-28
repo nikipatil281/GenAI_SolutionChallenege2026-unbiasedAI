@@ -23,13 +23,14 @@ export function ProjectSetup() {
     problemFraming, setProblemFraming, addLlmMessage, clearLlmMessages,
     dataset, setDataset, datasetStats, setDatasetStats, setAssociations, setFairnessMetrics, setSubgroups, 
     targetColumn, setTargetColumn, groundTruthColumn, setGroundTruthColumn, 
-    protectedColumns, setProtectedColumns, loadingModules, setLoadingModules,
+    protectedColumns, setProtectedColumns, llmMessages, loadingModules, setLoadingModules,
     clearChatMessages, setSystemDecision
   } = useAudit();
   
   // Local loading states
   const [uploadLoading, setUploadLoading] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
+  const projectSetupLocked = auditLoading || Boolean(loadingModules['project-setup']) || llmMessages.some((message) => message.type === 'project-setup');
 
   // Dataset Handlers
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,7 +203,11 @@ export function ProjectSetup() {
       <Card>
         <CardHeader>
           <CardTitle>Decision Questionnaire</CardTitle>
-          <CardDescription>Describe the system's intended function and impact.</CardDescription>
+          <CardDescription>
+            {projectSetupLocked
+              ? 'Describe the system\'s intended function and impact. This section locks once analysis starts.'
+              : 'Describe the system\'s intended function and impact.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 bg-[#E4E3E0] m-4 border border-[#141414] shadow-inner p-4">
           <div className="space-y-2">
@@ -218,7 +223,7 @@ export function ProjectSetup() {
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <Input id="task" value={problemFraming.taskDescription} onChange={(e) => setProblemFraming({...problemFraming, taskDescription: e.target.value})} placeholder="e.g. Rejecting loan applications automatically" />
+            <Input id="task" value={problemFraming.taskDescription} onChange={(e) => setProblemFraming({...problemFraming, taskDescription: e.target.value})} placeholder="e.g. Rejecting loan applications automatically" disabled={projectSetupLocked} />
           </div>
           
           <div className="space-y-2">
@@ -234,7 +239,7 @@ export function ProjectSetup() {
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <Input id="domain" value={problemFraming.domain} onChange={(e) => setProblemFraming({...problemFraming, domain: e.target.value})} placeholder="e.g. Healthcare, Lending, Hiring" />
+            <Input id="domain" value={problemFraming.domain} onChange={(e) => setProblemFraming({...problemFraming, domain: e.target.value})} placeholder="e.g. Healthcare, Lending, Hiring" disabled={projectSetupLocked} />
           </div>
 
           <div className="space-y-2">
@@ -250,7 +255,7 @@ export function ProjectSetup() {
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <Input id="harm" value={problemFraming.stakeholders} onChange={(e) => setProblemFraming({...problemFraming, stakeholders: e.target.value})} placeholder="e.g. Low-income applicants" />
+            <Input id="harm" value={problemFraming.stakeholders} onChange={(e) => setProblemFraming({...problemFraming, stakeholders: e.target.value})} placeholder="e.g. Low-income applicants" disabled={projectSetupLocked} />
           </div>
 
           <div className="space-y-2">
@@ -266,7 +271,7 @@ export function ProjectSetup() {
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <Textarea id="baseline" value={problemFraming.humanBaseline} onChange={(e) => setProblemFraming({...problemFraming, humanBaseline: e.target.value})} placeholder="e.g. Loan officers manually review applications taking 30 minutes each" />
+            <Textarea id="baseline" value={problemFraming.humanBaseline} onChange={(e) => setProblemFraming({...problemFraming, humanBaseline: e.target.value})} placeholder="e.g. Loan officers manually review applications taking 30 minutes each" disabled={projectSetupLocked} />
           </div>
 
           <div className="space-y-2">
@@ -282,7 +287,7 @@ export function ProjectSetup() {
                 </HoverCardContent>
               </HoverCard>
             </div>
-            <Textarea id="benefit" value={problemFraming.benefit} onChange={(e) => setProblemFraming({...problemFraming, benefit: e.target.value})} placeholder="e.g. Reduce review time entirely for 80% of applications" />
+            <Textarea id="benefit" value={problemFraming.benefit} onChange={(e) => setProblemFraming({...problemFraming, benefit: e.target.value})} placeholder="e.g. Reduce review time entirely for 80% of applications" disabled={projectSetupLocked} />
           </div>
         </CardContent>
       </Card>
@@ -291,14 +296,18 @@ export function ProjectSetup() {
       <Card>
         <CardHeader>
           <CardTitle>Data Upload & Configuration</CardTitle>
-          <CardDescription>Upload a CSV file and specify key columns</CardDescription>
+          <CardDescription>
+            {projectSetupLocked
+              ? 'Upload a CSV file and specify key columns. This section locks once analysis starts.'
+              : 'Upload a CSV file and specify key columns'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
-            <Button variant="outline" className="relative cursor-pointer" disabled={uploadLoading}>
+            <Button variant="outline" className="relative cursor-pointer" disabled={uploadLoading || projectSetupLocked}>
                <Upload className="w-4 h-4 mr-2" />
                {uploadLoading ? 'Uploading...' : 'Upload CSV / Excel'}
-               <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadLoading} />
+               <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadLoading || projectSetupLocked} />
             </Button>
             {dataset && (
               <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
@@ -324,8 +333,8 @@ export function ProjectSetup() {
                       </HoverCardContent>
                     </HoverCard>
                   </div>
-                  <Select value={targetColumn} onValueChange={setTargetColumn}>
-                    <SelectTrigger><SelectValue placeholder="Select prediction column" /></SelectTrigger>
+                  <Select value={targetColumn} onValueChange={setTargetColumn} disabled={projectSetupLocked}>
+                    <SelectTrigger disabled={projectSetupLocked}><SelectValue placeholder="Select prediction column" /></SelectTrigger>
                     <SelectContent>
                       {Object.keys(dataset[0]).map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                     </SelectContent>
@@ -343,8 +352,8 @@ export function ProjectSetup() {
                       </HoverCardContent>
                     </HoverCard>
                   </div>
-                  <Select value={groundTruthColumn} onValueChange={setGroundTruthColumn}>
-                    <SelectTrigger><SelectValue placeholder="Select ground truth column" /></SelectTrigger>
+                  <Select value={groundTruthColumn} onValueChange={setGroundTruthColumn} disabled={projectSetupLocked}>
+                    <SelectTrigger disabled={projectSetupLocked}><SelectValue placeholder="Select ground truth column" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">-- None --</SelectItem>
                       {Object.keys(dataset[0]).map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
@@ -374,11 +383,12 @@ export function ProjectSetup() {
                 </div>
                 <div className="border rounded-md h-32 overflow-y-auto p-2 space-y-1 bg-white">
                   {Object.keys(dataset[0]).map(k => (
-                    <label key={k} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <label key={k} className={`flex items-center gap-2 text-sm p-1 rounded ${projectSetupLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}>
                       <input 
                         type="checkbox" 
                         className="rounded border-gray-300"
                         checked={protectedColumns.includes(k)}
+                        disabled={projectSetupLocked}
                         onChange={() => {
                           if (protectedColumns.includes(k)) {
                             setProtectedColumns(protectedColumns.filter(c => c !== k));

@@ -11,6 +11,16 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 export function DecisionExport() {
   const { problemFraming, datasetStats, fairnessMetrics, subgroups, governance, systemDecision, setSystemDecision, llmMessages } = useAudit();
   const [loading, setLoading] = useState(false);
+  const completedMemoTypes = new Set(llmMessages.map((message) => message.type));
+  const decisionReadiness = [
+    { label: 'deterministic scan', ready: Boolean(datasetStats) },
+    { label: 'project setup review', ready: completedMemoTypes.has('project-setup') },
+    { label: 'proxy review', ready: completedMemoTypes.has('proxy') },
+    { label: 'fairness and subgroup review', ready: completedMemoTypes.has('subgroup') },
+    { label: 'governance review', ready: completedMemoTypes.has('governance') },
+  ];
+  const missingDecisionSteps = decisionReadiness.filter((step) => !step.ready);
+  const readyForDecision = missingDecisionSteps.length === 0;
 
   const handleGenerateDecision = async () => {
     setLoading(true);
@@ -136,7 +146,21 @@ export function DecisionExport() {
         <Card className="border-dashed">
            <CardContent className="flex flex-col items-center justify-center h-64 text-gray-400">
              <AlertOctagon className="w-12 h-12 mb-4 opacity-20" />
-             <p>Complete your audit reviews to generate a final deployment recommendation.</p>
+             {readyForDecision ? (
+               <>
+                 <p className="font-medium text-[#141414]/70">All audit reviews are complete.</p>
+                 <p className="mt-2 max-w-md text-center text-sm text-[#141414]/55">
+                   Click <span className="font-semibold">Synthesize Decision</span> to generate the final deployment recommendation.
+                 </p>
+               </>
+             ) : (
+               <>
+                 <p className="font-medium text-[#141414]/70">Decision synthesis is waiting on a few audit steps.</p>
+                 <p className="mt-2 max-w-lg text-center text-sm text-[#141414]/55">
+                   Complete the following first: {missingDecisionSteps.map((step) => step.label).join(', ')}.
+                 </p>
+               </>
+             )}
            </CardContent>
         </Card>
       )}

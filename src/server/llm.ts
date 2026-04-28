@@ -2,6 +2,12 @@ import { VertexAI } from '@google-cloud/vertexai';
 
 let generativeModel: any = null;
 
+const TEXT_RESPONSE_FALLBACK = "LLM reasoning unavailable - GCP_PROJECT_ID required.";
+const AUDIT_RESPONSE_STYLE = `IMPORTANT FORMATTING RULES:
+Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability.
+Do not begin with filler such as "Of course", "Here is", "Certainly", or any similar meta-introduction. Start immediately with the substantive analysis.
+Keep the response compact. Prefer no more than 3 short paragraphs or 4-6 bullets unless extra detail is genuinely necessary.`;
+
 function getAI() {
   if (!generativeModel) {
     const project = process.env.GCP_PROJECT_ID;
@@ -34,44 +40,63 @@ function getAI() {
   return generativeModel;
 }
 
-export async function evaluateLegitimacy(questionnaire: any) {
+function sanitizeTextResponse(text: string) {
+  let cleaned = text
+    .replace(/^```(?:markdown)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+
+  const leadingMetaPatterns = [
+    /^(?:of course|sure|certainly|absolutely)[^.!?\n]*[.!?]\s*/i,
+    /^(?:here(?:'|’)?s|here is|below is)\b[^.!?\n]*[.!?]\s*/i,
+  ];
+
+  let previous = '';
+  while (cleaned && cleaned !== previous) {
+    previous = cleaned;
+    leadingMetaPatterns.forEach((pattern) => {
+      cleaned = cleaned.replace(pattern, '').trimStart();
+    });
+  }
+
+  return cleaned;
+}
+
+async function runTextPrompt(prompt: string) {
   const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
+  if (!model) return TEXT_RESPONSE_FALLBACK;
+
+  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
+  const result = await model.generateContent(request);
+  const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return sanitizeTextResponse(text);
+}
+
+export async function evaluateLegitimacy(questionnaire: any) {
   const prompt = `You are a sociotechnical bias auditor evaluating a proposed AI system.
 Task: Write a Legitimacy Analysis. 
 Questionnaire Answers: ${JSON.stringify(questionnaire, null, 2)}
 Is the target variable morally defensible? Will it encode historical deprivation? 
 Could this decision be too socially contested to automate responsibly?
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. The user reading this might not be an AI ethics expert, so explain the risks simply, directly, and without overwhelming them with text.`;
+${AUDIT_RESPONSE_STYLE}
+The user reading this might not be an AI ethics expert, so explain the risks simply, directly, and without overwhelming them with text.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function generateDatasetNarrative(stats: any) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
   const prompt = `You are an AI auditor. Review these dataset statistics:
 ${JSON.stringify(stats, null, 2)}
 Explain what these issues may mean socially. What hidden concerns like selective visibility, historical exclusion, or institutional over-surveillance might be present? Produce a narrative: "What this data may actually be measuring".
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. Explain the issues simply and directly.`;
+${AUDIT_RESPONSE_STYLE}
+Explain the issues simply and directly.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function evaluateProxies(associations: any) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
   const prompt = `Review these feature associations with the target variable:
 ${JSON.stringify(associations, null, 2)}
 
@@ -79,18 +104,13 @@ We calculated a Mutual Information (MI) / Uncertainty Coefficient score for each
 
 Provide a "proxy legitimacy review" explaining why top associated features may be legitimate business drivers vs illegitimate proxies (e.g. 'zip_code').
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. Explain the issues simply and directly.`;
+${AUDIT_RESPONSE_STYLE}
+Explain the issues simply and directly.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function generateFairnessSummary(fairnessMetrics: any, subgroups: any) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
   const prompt = `Review these fairness metrics and subgroup statistics:
 Fairness Metrics: ${JSON.stringify(fairnessMetrics, null, 2)}
 Subgroups: ${JSON.stringify(subgroups, null, 2)}
@@ -105,29 +125,22 @@ CRITICAL INSTRUCTIONS:
 3. Highlight the worst intersectional harms (e.g., "Black Women" experiencing compounded disadvantage).
 4. Conclude with concrete operational recommendations.
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. Explain the issues simply and directly.`;
+${AUDIT_RESPONSE_STYLE}
+Explain the issues simply and directly.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function summarizeGovernance(questionnaire: any) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
   const prompt = `Review this governance questionnaire:
 ${JSON.stringify(questionnaire, null, 2)}
 
 Generate a "human oversight failure analysis". Identify whether oversight is meaningful or symbolic.
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. Explain the issues simply and directly.`;
+${AUDIT_RESPONSE_STYLE}
+Explain the issues simply and directly.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function generateDeploymentDecision(context: any) {
@@ -169,9 +182,6 @@ DO NOT wrap in \`\`\`json. Return raw JSON.`;
 }
 
 export async function evaluateProjectSetup(questionnaire: any, stats: any) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-  
   const prompt = `You are a sociotechnical bias auditor evaluating a proposed AI system and its initial dataset.
 Task: Write a comprehensive Project Setup Analysis.
 
@@ -186,12 +196,10 @@ Please evaluate the following:
 2. Data Risks: What do these dataset statistics mean socially? What hidden concerns like selective visibility, historical exclusion, or institutional over-surveillance might be present in this data schema?
 3. Synthesis: How does the proposed framing interact with the reality of the dataset?
 
-IMPORTANT FORMATTING RULES: 
-Write your response in clear, concise, and user-friendly language. Avoid dense academic jargon. Use short paragraphs, bullet points, and bold text for readability. The user reading this might not be an AI ethics expert, so explain the risks simply, directly, and without overwhelming them with text. DO NOT include formal memo headers like "MEMORANDUM", "TO:", "FROM:", "DATE:", or "SUBJECT:". Start immediately with the analysis.`;
+${AUDIT_RESPONSE_STYLE}
+The user reading this might not be an AI ethics expert, so explain the risks simply, directly, and without overwhelming them with text. DO NOT include formal memo headers like "MEMORANDUM", "TO:", "FROM:", "DATE:", or "SUBJECT:". Start immediately with the analysis.`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }
 
 export async function detectProtectedAttributes(columns: string[], sampleData: any[]) {
@@ -327,9 +335,6 @@ function buildAuditChatContext(context: any) {
 }
 
 export async function answerAuditQuestion(message: string, context: any, history: any[] = []) {
-  const model = getAI();
-  if (!model) return "LLM reasoning unavailable - GCP_PROJECT_ID required.";
-
   const prompt = `You are BiasScope's AI audit copilot.
 You answer questions about the user's uploaded dataset and the audit results that BiasScope already computed.
 
@@ -349,9 +354,7 @@ ${JSON.stringify(history.slice(-8), null, 2)}
 User question:
 ${message}
 
-Answer in markdown. Prefer short paragraphs and bullets when they improve clarity.`;
+Answer in markdown. Prefer short paragraphs and bullets when they improve clarity. Start directly with the answer and keep it compact. Do not use filler such as "Of course" or "Here is".`;
 
-  const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
-  const result = await model.generateContent(request);
-  return result.response.candidates[0].content.parts[0].text;
+  return runTextPrompt(prompt);
 }

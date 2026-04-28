@@ -10,9 +10,9 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 
 const STARTER_PROMPTS = [
-  'What are the biggest fairness risks in this dataset?',
-  'Which subgroups look most harmed and why?',
-  'Summarize the governance weaknesses before deployment.',
+  'What stands out in this dataset before I run the full audit?',
+  'Which columns look like possible protected attributes or proxy risks?',
+  'What are the biggest fairness issues I should investigate first?',
   'What should I fix before I trust this system?',
 ];
 
@@ -43,7 +43,12 @@ export function DataChat() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const chatReady = Boolean(dataset && llmMessages.some(message => message.type === 'governance'));
+  const hasDataset = Boolean(dataset?.length);
+  const sociotechnicalWaterfallComplete = ['project-setup', 'proxy', 'subgroup'].every((type) =>
+    llmMessages.some((message) => message.type === type)
+  );
+  const governanceReviewed = llmMessages.some((message) => message.type === 'governance');
+  const chatReady = hasDataset && sociotechnicalWaterfallComplete;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,7 +59,7 @@ export function DataChat() {
     if (!message || sending) return;
 
     if (!chatReady) {
-      toast.error('Complete the Governance Hub first to unlock the dataset chat.');
+      toast.error('Run the sociotechnical waterfall first to unlock the dataset chat. Governance is optional.');
       return;
     }
 
@@ -127,8 +132,9 @@ export function DataChat() {
               </div>
 
               <p className="max-w-3xl text-sm leading-6 text-[#141414]/70">
-                This assistant can use your uploaded dataset, the deterministic statistics, proxy signals, fairness metrics,
-                subgroup findings, governance answers, and previous LLM memos while it answers.
+                This assistant can use whatever audit context is currently available: your uploaded dataset, deterministic
+                statistics, proxy signals, fairness metrics, subgroup findings, governance answers, and previous LLM memos.
+                Governance adds extra context, but it is not required to start the chat.
               </p>
 
               <div className="flex flex-wrap gap-2">
@@ -146,7 +152,7 @@ export function DataChat() {
                 </Badge>
                 <Badge variant="secondary" className="gap-1 border border-[#141414]/10 bg-[#141414]/5 text-[#141414]">
                   <ShieldCheck className="h-3 w-3" />
-                  Governance reviewed
+                  {governanceReviewed ? 'Governance memo ready' : 'Governance optional'}
                 </Badge>
               </div>
             </div>
@@ -168,9 +174,9 @@ export function DataChat() {
           {!chatReady ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <Bot className="mb-4 h-14 w-14 text-[#141414]/15" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Chat Unlocks After Governance</h3>
+              <h3 className="text-lg font-bold uppercase tracking-tight">Chat Unlocks After Sociotechnical Waterfall</h3>
               <p className="mt-3 max-w-md text-sm leading-6 text-[#141414]/55">
-                Run the Governance Hub memo first so the bot can answer with the full audit context.
+                Complete the core sociotechnical audit first. Governance is optional and only adds extra context to the conversation.
               </p>
             </div>
           ) : chatMessages.length === 0 ? (
@@ -180,7 +186,7 @@ export function DataChat() {
               </div>
               <h3 className="mt-6 text-2xl font-bold uppercase tracking-tight">Ask Anything About This Audit</h3>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[#141414]/60">
-                Try a broad audit question, ask for a plain-language summary, or dig into a specific fairness signal.
+                The core sociotechnical analysis is ready, so you can now ask grounded questions about the dataset, risks, and findings.
               </p>
 
               <div className="mt-8 grid w-full max-w-3xl gap-3 md:grid-cols-2">
@@ -261,6 +267,7 @@ export function DataChat() {
                 }}
                 placeholder="Ask about the dataset, a protected group, a proxy feature, the governance memo, or the final recommendation..."
                 className="min-h-[88px] resize-none border-0 px-2 py-2 shadow-none focus-visible:ring-0"
+                disabled={!chatReady || sending}
               />
 
               <div className="mt-3 flex items-center justify-between gap-3 px-2 pb-1">
