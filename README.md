@@ -162,6 +162,7 @@ GCP_PROJECT_ID=your-gcp-project-id
 GCP_LOCATION=us-central1
 GCP_CLIENT_EMAIL=your-service-account-email
 GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+APP_URL=http://localhost:3000
 ```
 
 Notes:
@@ -169,6 +170,7 @@ Notes:
 - The LLM features depend on the `GCP_*` variables above.
 - If these values are missing, the deterministic audit still runs, but LLM responses will fall back to an unavailable message.
 - `GEMINI_API_KEY` is referenced in the Vite config, but the current audit flow uses the server-side Vertex AI client for the actual LLM features.
+- `APP_URL` is used by the backend as an allowed browser origin when the frontend is hosted on a different domain.
 
 ### Install And Run
 
@@ -223,7 +225,7 @@ Render is the easiest fit for this repo because BiasScope is a single Node/Expre
 Use these settings in Render:
 
 - Runtime: `Node`
-- Build Command: `npm install && npm run build`
+- Build Command: `npm ci --include=dev && npm run build`
 - Start Command: `npm start`
 - Health Check Path: `/api/health`
 
@@ -237,14 +239,32 @@ GCP_PROJECT_ID=your-gcp-project-id
 GCP_LOCATION=us-central1
 GCP_CLIENT_EMAIL=your-service-account-email
 GCP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----...-----END PRIVATE KEY-----
+APP_URL=https://your-vercel-frontend.vercel.app
 ```
 
 Notes:
 
 - `PORT` is provided automatically by Render. The app now reads it from the environment.
-- `APP_URL` is not used anywhere in this codebase right now, so you do not need to set it for Render.
+- Set `APP_URL` to the deployed frontend origin that is allowed to call the Render backend. Do not include a trailing slash.
 - For `GCP_PRIVATE_KEY`, paste the full key exactly as Render stores it. The server code handles escaped `\n` sequences correctly.
 - After deployment, verify that `https://<your-render-service>/api/health` returns `{ "status": "ok" }`.
+
+## Split Deployment: Vercel Frontend + Render Backend
+
+If you want to keep the frontend on Vercel and the backend on Render:
+
+1. Deploy the backend on Render first.
+2. In Render, set:
+   - `APP_URL=https://your-vercel-frontend.vercel.app`
+3. In Vercel, set:
+   - `VITE_API_BASE_URL=https://your-render-service.onrender.com`
+4. Redeploy both services after updating the environment variables.
+
+Notes:
+
+- `VITE_API_BASE_URL` is read by the frontend at build time, so changing it requires a new Vercel deployment.
+- Use the full HTTPS origin only, with no trailing slash.
+- Once this is set, the frontend will call the Render backend for `/api/*` requests instead of calling the Vercel domain.
 
 ## Important Product Behavior
 

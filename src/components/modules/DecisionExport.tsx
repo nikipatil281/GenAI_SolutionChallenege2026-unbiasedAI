@@ -7,6 +7,7 @@ import { BrainCircuit, AlertOctagon, CheckCircle2, AlertTriangle, FileJson, Info
 import axios from 'axios';
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
+import { apiUrl } from '../../lib/api';
 
 export function DecisionExport() {
   const { problemFraming, datasetStats, fairnessMetrics, subgroups, governance, systemDecision, setSystemDecision, llmMessages } = useAudit();
@@ -34,7 +35,7 @@ export function DecisionExport() {
         llmFindings: llmMessages.map(m => m.title)
       };
 
-      const res = await axios.post('/api/llm/decision', { context });
+      const res = await axios.post(apiUrl('/api/llm/decision'), { context });
       setSystemDecision(res.data);
       toast.success('Final decision recommendation generated.');
     } catch (e: any) {

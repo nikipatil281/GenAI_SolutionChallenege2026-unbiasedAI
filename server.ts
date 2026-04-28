@@ -14,10 +14,44 @@ import {
   answerAuditQuestion
 } from "./src/server/llm.ts";
 
+function getAllowedOrigins() {
+  const originSources = [
+    process.env.APP_URL,
+    process.env.CORS_ORIGIN,
+  ].filter(Boolean) as string[];
+
+  return originSources
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
   const isProduction = process.env.NODE_ENV === "production";
+  const allowedOrigins = getAllowedOrigins();
+
+  app.use((req, res, next) => {
+    const requestOrigin = req.headers.origin;
+
+    if (allowedOrigins.length === 0) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    } else if (requestOrigin && allowedOrigins.includes(requestOrigin.replace(/\/+$/, ""))) {
+      res.setHeader("Access-Control-Allow-Origin", requestOrigin);
+      res.setHeader("Vary", "Origin");
+    }
+
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      res.sendStatus(204);
+      return;
+    }
+
+    next();
+  });
 
   app.use(express.json({ limit: "50mb" }));
 

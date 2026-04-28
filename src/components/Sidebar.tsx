@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAudit } from '../context/AuditContext';
-import { ShieldAlert, Scale, Users, FileBarChart, Settings, ListChecks, ArrowLeft, MessageSquareMore, Sparkles } from 'lucide-react';
+import { ShieldAlert, Scale, Users, FileBarChart, Settings, ListChecks, ArrowLeft, MessageSquareMore, Sparkles, Cloud, Loader2 } from 'lucide-react';
+import { apiUrl } from '../lib/api';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ className, onBackToHome }: SidebarProps) {
   const { activeModule, setActiveModule, llmMessages, loadingModules } = useAudit();
+  const [cloudStatus, setCloudStatus] = useState<'checking' | 'ready' | 'waking'>('checking');
   
   const modules = [
     { id: 'project-setup', label: '01 Project Setup', icon: ShieldAlert },
@@ -23,6 +25,42 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
   const hasMessage = (type: string) => llmMessages.some(m => m.type === type);
   const chatReady = ['project-setup', 'proxy', 'subgroup'].every((type) => hasMessage(type));
   const chatActive = activeModule === 'ai-chat';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkCloudHealth = async () => {
+      const controller = new AbortController();
+      const abortTimer = window.setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const response = await fetch(apiUrl('/api/health'), {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+
+        if (!cancelled) {
+          setCloudStatus(response.ok ? 'ready' : 'waking');
+        }
+      } catch {
+        if (!cancelled) {
+          setCloudStatus('waking');
+        }
+      } finally {
+        window.clearTimeout(abortTimer);
+      }
+    };
+
+    void checkCloudHealth();
+    const intervalId = window.setInterval(() => {
+      void checkCloudHealth();
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   return (
     <aside className={cn("w-56 bg-[#141414] text-[#E4E3E0] flex flex-col", className)}>
@@ -120,8 +158,29 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
         </div>
       </nav>
       
-      <div className="p-4 bg-white/5 text-[10px]">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="p-4 bg-white/5 text-[10px] space-y-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex items-center gap-2">
+            {cloudStatus === 'checking' ? (
+              <Loader2 className="w-3.5 h-3.5 text-[#F27D26] animate-spin" />
+            ) : (
+              <Cloud className={cn(
+                "w-3.5 h-3.5",
+                cloudStatus === 'ready' ? "text-green-400" : "text-amber-400"
+              )} />
+            )}
+            <span className="font-bold uppercase tracking-wider">
+              {cloudStatus === 'ready' ? 'Cloud Ready' : cloudStatus === 'checking' ? 'Checking Cloud' : 'Cloud Waking'}
+            </span>
+          </div>
+          <p className="mt-2 text-[9px] leading-relaxed opacity-60">
+            {cloudStatus === 'ready'
+              ? 'Backend connected and ready for audit requests.'
+              : 'The hosted backend may still be starting up. Render cold starts can take a little while.'}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500"></div>
           <span>Engine Active</span>
         </div>

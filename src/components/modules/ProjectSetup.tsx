@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ScrollArea } from '../ui/scroll-area';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
 import { LlmCompanion } from '../ui/llm-companion';
+import { apiUrl } from '../../lib/api';
 
 export function ProjectSetup() {
   // Context state
@@ -58,7 +59,7 @@ export function ProjectSetup() {
       try {
         const columns = Object.keys(data[0] || {});
         const sampleData = data.slice(0, 3);
-        const res = await axios.post('/api/llm/detect-protected', { columns, sampleData });
+        const res = await axios.post(apiUrl('/api/llm/detect-protected'), { columns, sampleData });
         
         if (res.data.protectedCols && res.data.protectedCols.length > 0) {
           setProtectedColumns(res.data.protectedCols);
@@ -120,7 +121,7 @@ export function ProjectSetup() {
     
     try {
       // 1. Run Deterministic Scan
-      const scanRes = await axios.post('/api/audit/analyze', {
+      const scanRes = await axios.post(apiUrl('/api/audit/analyze'), {
         data: dataset,
         targetColumn,
         groundTruthColumn,
@@ -146,7 +147,7 @@ export function ProjectSetup() {
 
       // STEP 1: Project Setup Memo
       setLoadingModules(prev => ({ ...prev, 'project-setup': true }));
-      const llmRes1 = await axios.post('/api/llm/project-setup', { 
+      const llmRes1 = await axios.post(apiUrl('/api/llm/project-setup'), { 
         questionnaire: problemFraming,
         stats: scanRes.data.datasetStats
       });
@@ -159,7 +160,7 @@ export function ProjectSetup() {
 
       // STEP 2: Proxy Legitimacy Review
       setLoadingModules(prev => ({ ...prev, 'proxy-screening': true }));
-      const llmRes2 = await axios.post('/api/llm/proxy', { associations: scanRes.data.associations.slice(0, 10) });
+      const llmRes2 = await axios.post(apiUrl('/api/llm/proxy'), { associations: scanRes.data.associations.slice(0, 10) });
       addLlmMessage({
         type: 'proxy',
         title: 'Proxy Legitimacy Review',
@@ -169,7 +170,7 @@ export function ProjectSetup() {
 
       // STEP 3 & 4: Subgroup & Fairness Interpretation
       setLoadingModules(prev => ({ ...prev, 'fairness-metrics': true, 'subgroup-audit': true }));
-      const llmRes3 = await axios.post('/api/llm/fairness', { 
+      const llmRes3 = await axios.post(apiUrl('/api/llm/fairness'), { 
         fairnessMetrics: scanRes.data.fairness, 
         subgroups: scanRes.data.subgroups 
       });

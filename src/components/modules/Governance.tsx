@@ -9,6 +9,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card';
 import { LlmCompanion } from '../ui/llm-companion';
+import { apiUrl } from '../../lib/api';
 
 export function Governance() {
   const { governance, setGovernance, addLlmMessage, llmMessages } = useAudit();
@@ -18,7 +19,7 @@ export function Governance() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const res = await axios.post('/api/llm/governance', { questionnaire: governance });
+      const res = await axios.post(apiUrl('/api/llm/governance'), { questionnaire: governance });
       addLlmMessage({
         type: 'governance',
         title: 'Governance & Human Oversight Risk',

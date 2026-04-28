@@ -5,6 +5,7 @@ import { Bot, Database, Loader2, MessageSquareMore, Scale, Send, ShieldCheck, Sp
 import { toast } from 'sonner';
 import { useAudit } from '../../context/AuditContext';
 import { cn } from '../../lib/utils';
+import { apiUrl } from '../../lib/api';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
@@ -75,7 +76,7 @@ export function DataChat() {
 
     try {
       const history = [...chatMessages, userMessage].map(({ role, content }) => ({ role, content }));
-      const res = await axios.post('/api/agent/chat', {
+      const res = await axios.post(apiUrl('/api/agent/chat'), {
         message,
         history,
         context: {
