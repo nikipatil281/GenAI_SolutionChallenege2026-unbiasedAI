@@ -203,6 +203,49 @@ npm run build
 npm run start
 ```
 
+## Deploying To Render
+
+Render is the easiest fit for this repo because BiasScope is a single Node/Express app that also serves the built frontend.
+
+### Option 1: Deploy With `render.yaml`
+
+1. Push this repository to GitHub.
+2. In Render, create a new `Blueprint` and select this repo.
+3. Render will detect [render.yaml](./render.yaml).
+4. Add the required secret environment variables in the Render dashboard:
+   - `GCP_PROJECT_ID`
+   - `GCP_CLIENT_EMAIL`
+   - `GCP_PRIVATE_KEY`
+5. Deploy the service.
+
+### Option 2: Create A Web Service Manually
+
+Use these settings in Render:
+
+- Runtime: `Node`
+- Build Command: `npm install && npm run build`
+- Start Command: `npm start`
+- Health Check Path: `/api/health`
+
+### Render Environment Variables
+
+Set these in Render:
+
+```text
+NODE_ENV=production
+GCP_PROJECT_ID=your-gcp-project-id
+GCP_LOCATION=us-central1
+GCP_CLIENT_EMAIL=your-service-account-email
+GCP_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----...-----END PRIVATE KEY-----
+```
+
+Notes:
+
+- `PORT` is provided automatically by Render. The app now reads it from the environment.
+- `APP_URL` is not used anywhere in this codebase right now, so you do not need to set it for Render.
+- For `GCP_PRIVATE_KEY`, paste the full key exactly as Render stores it. The server code handles escaped `\n` sequences correctly.
+- After deployment, verify that `https://<your-render-service>/api/health` returns `{ "status": "ok" }`.
+
 ## Important Product Behavior
 
 - The `Decision Questionnaire` locks once the sociotechnical analysis has been initiated.
