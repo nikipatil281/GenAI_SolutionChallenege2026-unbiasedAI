@@ -21,7 +21,7 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
   ];
 
   const hasMessage = (type: string) => llmMessages.some(m => m.type === type);
-  const chatReady = hasMessage('governance');
+  const chatReady = ['project-setup', 'proxy', 'subgroup'].every((type) => hasMessage(type));
   const chatActive = activeModule === 'ai-chat';
 
   return (
@@ -113,7 +113,7 @@ export function Sidebar({ className, onBackToHome }: SidebarProps) {
                 "text-[10px] normal-case leading-relaxed",
                 chatReady ? "text-current/80" : "text-white/30"
               )}>
-                Ask questions about your dataset, fairness signals, subgroup harms, and governance results.
+                Ask questions about your dataset, fairness signals, subgroup harms, and, if available, governance results.
               </p>
             </div>
           </button>
